@@ -9,6 +9,8 @@ require File.join(File.dirname(__FILE__), 'jekyll', 'ext')
 
 module Rack
   class Jekyll
+    attr_reader :no_render
+
     def compiling?
       if @compile_queue.nil?
         false
@@ -38,6 +40,15 @@ module Rack
       @wait_page = ::File.open(path, 'r').read
     end
 
+    def set_no_render(opts, destination)
+      @no_render = !!opts[:no_render]
+      if opts[:no_render] && !::File.exist?(destination)
+        puts "ERROR: :no_render is set but #{destination} does not exist.  The setting will be ignored."
+        @no_render = false
+      end
+      puts ":no_render is true.  Skipping site rendering." if no_render
+    end
+
     def initialize(opts = {})
       config_file = opts[:config] || "_config.yml"
       read_wait_page(opts)
@@ -48,6 +59,7 @@ module Rack
         @path = config['destination'] || "_site"
         @files = ::Dir[@path + "/**/*"].inspect
         @files unless ENV['RACK_DEBUG']
+        set_no_render(opts, @path)
       end
 
       @mimes = Rack::Mime::MIME_TYPES.map{|k,v| /#{k.gsub('.','\.')}$/i }
@@ -55,7 +67,7 @@ module Rack
       options = ::Jekyll.configuration(opts)
       site = ::Jekyll::Site.new(options)
 
-      process(site)
+      process(site) unless no_render
       if options['auto']
         require 'listen'
         require 'pathname'
