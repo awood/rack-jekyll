@@ -15,8 +15,6 @@ module Rack
     # https://emptysqua.re/blog/an-event-synchronization-primitive-for-ruby/
     attr_reader :mutex, :building_cond
 
-    @complete = false
-
     def complete?
       @complete
     end
@@ -37,6 +35,7 @@ module Rack
     # Other options are passed on to Jekyll::Site.
     def initialize(options = {})
       overrides = options.dup
+      @complete = false
       @force_build   = overrides.fetch(:force_build, false)
       @auto          = overrides.fetch(:auto, false)
       @wait_page     = read_wait_page(overrides)
